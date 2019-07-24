@@ -45,7 +45,8 @@ setup(
     include_package_data=True,
     platforms='any',
     install_requires=[
-        'Flask>=0.11, !=0.12.3'
+        'Flask>=0.11, !=0.12.3',
+        'punq>=0.3.0',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

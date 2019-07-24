@@ -15,6 +15,7 @@ from uuid import UUID
 from werkzeug.routing import parse_rule
 from flask import request, make_response
 from flask.wrappers import ResponseBase
+from punq import Container
 import re
 
 _py2 = sys.version_info[0] == 2
@@ -46,7 +47,7 @@ class FlaskView(object):
     """Base view for any class based views implemented with Flask-Classful. Will
     automatically configure routes when registered with a Flask app instance.
     """
-
+    container = None
     decorators = []
     representations = {}
     route_base = None
@@ -76,7 +77,7 @@ class FlaskView(object):
     @classmethod
     def register(cls, app, route_base=None, subdomain=None, route_prefix=None,
                  trailing_slash=None, method_dashified=None, base_class=None,
-                 init_argument=None, **rule_options):
+                 **rule_options):
         """Registers a FlaskView class for use with a specific instance of a
         Flask app. Any methods not prefixes with an underscore are candidates
         to be routed and will have routes registered when this method is
@@ -100,8 +101,6 @@ class FlaskView(object):
                                  some_route to /some-route/ route instead of
                                  default /some_route/
         :param base_class: Allow specifying an alternate base class for customization instead of the default FlaskView
-        :param init_argument: If provided, when instancing the class being registered it will pass this parameter to
-                              the constructor
         :param rule_options: The options are passed to
                                 :class:`~werkzeug.routing.Rule` object.
         """
@@ -135,10 +134,12 @@ class FlaskView(object):
             cls.orig_method_dashified = cls.method_dashified
             cls.method_dashified = method_dashified
 
+        cls.container.register(cls, cls)
+
         members = get_interesting_members(base_class, cls)
 
         for name, value in members:
-            proxy = cls.make_proxy_method(name, init_argument)
+            proxy = cls.make_proxy_method(name)
             route_name = cls.build_route_name(name)
 
             # This long try block calls build_rule() and add_url_rule()
@@ -229,18 +230,15 @@ class FlaskView(object):
         return subdomain, endpoint, options,
 
     @classmethod
-    def make_proxy_method(cls, name, init_argument):
+    def make_proxy_method(cls, name):
         """Creates a proxy function that can be used by Flasks routing. The
         proxy instantiates the FlaskView subclass and calls the appropriate
         method.
 
         :param name: the name of the method to create a proxy for
         """
+        i = cls.container.resolve(cls)
 
-        if init_argument is None:
-            i = cls()
-        else:
-            i = cls(init_argument)
         view = getattr(i, name)
 
         # Since the view is a bound instance method,
@@ -411,6 +409,9 @@ class FlaskView(object):
         """
         return cls.__name__ + ":{0!s}".format(method_name)
 
+    @classmethod
+    def initialize_with_container(cls, container: Container):
+        cls.container = container
 
 def _dashify_uppercase(name):
     """convert somethingWithUppercase into something-with-uppercase"""
