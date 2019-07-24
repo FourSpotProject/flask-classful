@@ -32,9 +32,9 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 
 setup(
-    name='Flask-Classful',
+    name='Flask-Classful-DI',
     version=find_version('flask_classful.py'),
-    url='https://github.com/teracyhq/flask-classful',
+    url='https://github.com/FourSpotProject/flask-classful/',
     license='BSD',
     author='Freedom Dumlao & Teracy, Inc',
     author_email='hq@teracy.com',
